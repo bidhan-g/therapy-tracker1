@@ -47,3 +47,13 @@ jobs:
         with:
           name: TherapyTracker-app
           path: app/build/outputs/apk/release/*.apk
+
+      - name: Create GitHub Release with APK
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: "TherapyTracker build ${{ github.run_number }}"
+          files: app/build/outputs/apk/release/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
