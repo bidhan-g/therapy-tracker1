@@ -30,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var repository: SessionRepository
     private lateinit var adapter: SessionAdapter
+    private var targetSetupDialog: AlertDialog? = null
 
     private enum class DialogMode { SCHEDULE, LOG_PAST, EDIT }
 
@@ -53,8 +54,43 @@ class MainActivity : AppCompatActivity() {
         binding.btnScheduleAppointment.setOnClickListener { showSessionDialog(DialogMode.SCHEDULE, null) }
         binding.btnLogPastSession.setOnClickListener { showSessionDialog(DialogMode.LOG_PAST, null) }
 
-       observeData()
+        observeData()
         requestNotificationPermissionIfNeeded()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!SecurePrefs.isTargetSet(this) && targetSetupDialog?.isShowing != true) {
+            showTargetSetupDialog()
+        }
+    }
+
+    private fun showTargetSetupDialog() {
+        val view = layoutInflater.inflate(R.layout.dialog_set_target, null)
+        val etTarget = view.findViewById<android.widget.EditText>(R.id.etTargetInput)
+        val tvError = view.findViewById<android.widget.TextView>(R.id.tvTargetError)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(view)
+            .setCancelable(false)
+            .setPositiveButton(R.string.get_started, null)
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val value = etTarget.text.toString().trim().toIntOrNull()
+                if (value == null || value <= 0) {
+                    tvError.visibility = View.VISIBLE
+                } else {
+                    SecurePrefs.setTargetSessions(this, value)
+                    binding.tvProgressCount.text = "0 / $value"
+                    dialog.dismiss()
+                }
+            }
+        }
+
+        targetSetupDialog = dialog
+        dialog.show()
     }
 
     override fun onCreateOptionsMenu(menu: android.view.Menu): Boolean {
@@ -73,11 +109,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun observeData() {
         val target = SecurePrefs.getTargetSessions(this)
-        binding.tvProgressCount.text = "0 / $target"
+        binding.tvProgressCount.text = if (target > 0) "0 / $target" else "0"
 
         repository.observeCompletedCount().observe(this) { count ->
             val currentTarget = SecurePrefs.getTargetSessions(this)
-            binding.tvProgressCount.text = "$count / $currentTarget"
+            binding.tvProgressCount.text = if (currentTarget > 0) "$count / $currentTarget" else "$count"
             val pct = if (currentTarget > 0) {
                 ((count.toFloat() / currentTarget) * 100).toInt().coerceIn(0, 100)
             } else {
