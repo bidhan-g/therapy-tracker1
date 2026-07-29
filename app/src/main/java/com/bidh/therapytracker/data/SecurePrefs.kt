@@ -28,11 +28,19 @@ object SecurePrefs {
         )
     }
 
+    // -1 means the user hasn't chosen a total yet.
     fun getTargetSessions(context: Context): Int =
-        prefs(context).getInt(KEY_TARGET_SESSIONS, 36)
+        prefs(context).getInt(KEY_TARGET_SESSIONS, -1)
+
+    fun isTargetSet(context: Context): Boolean =
+        getTargetSessions(context) > 0
 
     fun setTargetSessions(context: Context, value: Int) {
         prefs(context).edit().putInt(KEY_TARGET_SESSIONS, value).apply()
+    }
+
+    fun clearTargetSessions(context: Context) {
+        prefs(context).edit().remove(KEY_TARGET_SESSIONS).apply()
     }
 
     fun isLockEnabled(context: Context): Boolean =
