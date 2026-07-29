@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import net.sqlcipher.database.SupportFactory
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 
 @Database(entities = [Session::class], version = 1, exportSchema = false)
 @TypeConverters(Converters::class)
@@ -24,8 +24,9 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         private fun build(context: Context): AppDatabase {
+            System.loadLibrary("sqlcipher")
             val passphrase = SecurePrefs.getOrCreateDbPassphrase(context)
-            val factory = SupportFactory(passphrase)
+            val factory = SupportOpenHelperFactory(passphrase)
             return Room.databaseBuilder(context.applicationContext, AppDatabase::class.java, "sessions.db")
                 .openHelperFactory(factory)
                 .fallbackToDestructiveMigration()
