@@ -1,0 +1,62 @@
+name: Build APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.7
+
+      - name: Generate release keystore (self-signed, CI-local only)
+        run: |
+          keytool -genkeypair -v \
+            -keystore app/release.keystore \
+            -alias therapytracker \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass therapytracker -keypass therapytracker \
+            -dname "CN=TherapyTracker, OU=Personal, O=Personal, L=Local, S=Local, C=US"
+
+      - name: Build release APK
+        env:
+          RELEASE_KEYSTORE: release.keystore
+          RELEASE_KEYSTORE_PASSWORD: therapytracker
+          RELEASE_KEY_ALIAS: therapytracker
+          RELEASE_KEY_PASSWORD: therapytracker
+        run: gradle :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TherapyTracker-app
+          path: app/build/outputs/apk/release/*.apk
+
+      - name: Create GitHub Release with APK
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: "TherapyTracker build ${{ github.run_number }}"
+          files: app/build/outputs/apk/release/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
