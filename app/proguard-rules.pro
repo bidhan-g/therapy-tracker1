@@ -13,3 +13,15 @@
 -dontwarn javax.annotation.concurrent.GuardedBy
 -dontwarn javax.annotation.**
 -dontwarn com.google.errorprone.annotations.**
+
+# Google API Client / Drive (Stage C) - these libraries parse their model
+# classes via reflection (fields annotated with @Key), so keep field names.
+-keepattributes Signature,*Annotation*,EnclosingMethod,InnerClasses
+-keep class com.google.api.services.drive.** { *; }
+-keep class com.google.api.client.** { *; }
+-keepclassmembers class * extends com.google.api.client.json.GenericJson { *; }
+-dontwarn com.google.api.client.**
+-dontwarn com.google.api.services.**
+-dontwarn org.apache.http.**
+-dontwarn org.apache.commons.**
+-dontwarn org.joda.time.**

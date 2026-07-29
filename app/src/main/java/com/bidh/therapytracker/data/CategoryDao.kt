@@ -22,6 +22,9 @@ interface CategoryDao {
     @Query("SELECT * FROM categories WHERE id = :id")
     suspend fun getById(id: Long): Category?
 
+    @Query("SELECT * FROM categories")
+    suspend fun getAllOnce(): List<Category>
+
     @Query(
         """
         SELECT c.id as id, c.name as name, c.targetCount as targetCount,

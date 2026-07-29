@@ -27,6 +27,7 @@ import com.bidh.therapytracker.data.SessionRepository
 import com.bidh.therapytracker.data.SessionStatus
 import com.bidh.therapytracker.databinding.ActivityMainBinding
 import com.bidh.therapytracker.reminders.ReminderScheduler
+import com.bidh.therapytracker.sync.DriveSyncScheduler
 import com.bidh.therapytracker.util.DateTimeUtils
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -162,6 +163,7 @@ class MainActivity : AppCompatActivity() {
             sessions.forEach { ReminderScheduler.cancel(this@MainActivity, it.id) }
             repository.deleteAllForCategory(categoryId)
             categoryRepository.delete(category)
+            DriveSyncScheduler.triggerSyncSoon(this@MainActivity)
             finish()
         }
     }
@@ -285,6 +287,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+            DriveSyncScheduler.triggerSyncSoon(this@MainActivity)
         }
     }
 
@@ -298,6 +301,7 @@ class MainActivity : AppCompatActivity() {
             } else {
                 ReminderScheduler.cancel(this@MainActivity, updated.id)
             }
+            DriveSyncScheduler.triggerSyncSoon(this@MainActivity)
         }
     }
 
@@ -309,6 +313,7 @@ class MainActivity : AppCompatActivity() {
                 lifecycleScope.launch {
                     repository.delete(session)
                     ReminderScheduler.cancel(this@MainActivity, session.id)
+                    DriveSyncScheduler.triggerSyncSoon(this@MainActivity)
                 }
             }
             .setNegativeButton(R.string.cancel, null)

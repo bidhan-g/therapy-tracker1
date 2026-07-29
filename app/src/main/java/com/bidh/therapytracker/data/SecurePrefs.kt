@@ -15,6 +15,7 @@ object SecurePrefs {
     private const val KEY_MORNING_HOUR = "morning_hour"
     private const val KEY_MORNING_MINUTE = "morning_minute"
     private const val KEY_DB_PASSPHRASE = "db_passphrase"
+    private const val KEY_DRIVE_FOLDER_ID = "drive_folder_id"
 
     private fun prefs(context: Context) = run {
         val masterKey = MasterKey.Builder(context.applicationContext)
@@ -58,6 +59,13 @@ object SecurePrefs {
             .putInt(KEY_MORNING_HOUR, hour)
             .putInt(KEY_MORNING_MINUTE, minute)
             .apply()
+    }
+
+    fun getDriveFolderId(context: Context): String? =
+        prefs(context).getString(KEY_DRIVE_FOLDER_ID, null)
+
+    fun setDriveFolderId(context: Context, id: String) {
+        prefs(context).edit().putString(KEY_DRIVE_FOLDER_ID, id).apply()
     }
 
     fun getOrCreateDbPassphrase(context: Context): ByteArray {

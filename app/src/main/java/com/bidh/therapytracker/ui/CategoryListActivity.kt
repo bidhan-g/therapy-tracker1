@@ -19,6 +19,7 @@ import com.bidh.therapytracker.data.CategorySummary
 import com.bidh.therapytracker.data.SessionRepository
 import com.bidh.therapytracker.databinding.ActivityCategoryListBinding
 import com.bidh.therapytracker.reminders.ReminderScheduler
+import com.bidh.therapytracker.sync.DriveSyncScheduler
 import kotlinx.coroutines.launch
 
 class CategoryListActivity : AppCompatActivity() {
@@ -97,6 +98,7 @@ class CategoryListActivity : AppCompatActivity() {
                 val target = if (targetText.isEmpty()) null else targetText.toIntOrNull()?.takeIf { it > 0 }
                 lifecycleScope.launch {
                     repository.insert(Category(name = name, targetCount = target))
+                    DriveSyncScheduler.triggerSyncSoon(this@CategoryListActivity)
                     dialog.dismiss()
                 }
             }
@@ -130,6 +132,7 @@ class CategoryListActivity : AppCompatActivity() {
                 val target = if (targetText.isEmpty()) null else targetText.toIntOrNull()?.takeIf { it > 0 }
                 lifecycleScope.launch {
                     repository.update(Category(id = summary.id, name = name, targetCount = target))
+                    DriveSyncScheduler.triggerSyncSoon(this@CategoryListActivity)
                     dialog.dismiss()
                 }
             }
@@ -152,6 +155,7 @@ class CategoryListActivity : AppCompatActivity() {
             sessions.forEach { ReminderScheduler.cancel(this@CategoryListActivity, it.id) }
             sessionRepository.deleteAllForCategory(summary.id)
             repository.delete(Category(id = summary.id, name = summary.name, targetCount = summary.targetCount))
+            DriveSyncScheduler.triggerSyncSoon(this@CategoryListActivity)
         }
     }
 }

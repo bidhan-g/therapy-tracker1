@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.os.Build
 import com.bidh.therapytracker.data.AppDatabase
 import com.bidh.therapytracker.data.SecurePrefs
+import com.bidh.therapytracker.sync.DriveSyncScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -15,6 +16,7 @@ class TherapyTrackerApp : Application() {
         super.onCreate()
         createNotificationChannel()
         migrateLegacyTargetIfNeeded()
+        DriveSyncScheduler.ensurePeriodicSyncScheduled(this)
     }
 
     private fun createNotificationChannel() {
