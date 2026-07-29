@@ -18,21 +18,23 @@ class ReminderWorker(appContext: Context, params: WorkerParameters) : CoroutineW
 
     companion object {
         const val KEY_SESSION_ID = "session_id"
+        const val KEY_CATEGORY_ID = "category_id"
         const val KEY_TITLE = "title"
         const val KEY_MESSAGE = "message"
         const val CHANNEL_ID = "appointment_reminders"
     }
 
     override suspend fun doWork(): Result {
-        val title = inputData.getString(KEY_TITLE) ?: "Therapy session reminder"
-        val message = inputData.getString(KEY_MESSAGE) ?: "You have an upcoming therapy session."
+        val title = inputData.getString(KEY_TITLE) ?: "Appointment reminder"
+        val message = inputData.getString(KEY_MESSAGE) ?: "You have an upcoming appointment."
         val sessionId = inputData.getLong(KEY_SESSION_ID, -1L)
+        val categoryId = inputData.getLong(KEY_CATEGORY_ID, -1L)
 
-        showNotification(title, message, sessionId)
+        showNotification(title, message, sessionId, categoryId)
         return Result.success()
     }
 
-    private fun showNotification(title: String, message: String, sessionId: Long) {
+    private fun showNotification(title: String, message: String, sessionId: Long, categoryId: Long) {
         val context = applicationContext
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -44,6 +46,7 @@ class ReminderWorker(appContext: Context, params: WorkerParameters) : CoroutineW
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_CATEGORY_ID, categoryId)
         }
         val pendingIntent = PendingIntent.getActivity(
             context,

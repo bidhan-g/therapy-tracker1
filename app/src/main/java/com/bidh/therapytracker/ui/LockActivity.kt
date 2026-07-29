@@ -2,6 +2,7 @@ package com.bidh.therapytracker.ui
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -16,11 +17,12 @@ class LockActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         binding = ActivityLockBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         if (!SecurePrefs.isLockEnabled(this)) {
-            goToMain()
+            goToHome()
             return
         }
 
@@ -35,14 +37,14 @@ class LockActivity : AppCompatActivity() {
         val canAuthenticate = biometricManager.canAuthenticate(authenticators)
         if (canAuthenticate != BiometricManager.BIOMETRIC_SUCCESS) {
             // No usable lock configured on the device; don't lock the user out of their own app.
-            goToMain()
+            goToHome()
             return
         }
 
         val executor = ContextCompat.getMainExecutor(this)
         val prompt = BiometricPrompt(this, executor, object : BiometricPrompt.AuthenticationCallback() {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                goToMain()
+                goToHome()
             }
         })
 
@@ -55,8 +57,8 @@ class LockActivity : AppCompatActivity() {
         prompt.authenticate(promptInfo)
     }
 
-    private fun goToMain() {
-        startActivity(Intent(this, MainActivity::class.java))
+    private fun goToHome() {
+        startActivity(Intent(this, CategoryListActivity::class.java))
         finish()
     }
 }

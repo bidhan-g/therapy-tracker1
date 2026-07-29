@@ -1,12 +1,12 @@
 package com.bidh.therapytracker.ui
 
-import android.app.AlertDialog
 import android.app.TimePickerDialog
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.bidh.therapytracker.R
 import com.bidh.therapytracker.data.SecurePrefs
+import com.bidh.therapytracker.data.Session
 import com.bidh.therapytracker.data.SessionRepository
 import com.bidh.therapytracker.databinding.ActivitySettingsBinding
 import com.bidh.therapytracker.reminders.ReminderScheduler
@@ -21,28 +21,13 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         binding = ActivitySettingsBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
         binding.toolbar.setNavigationOnClickListener { finish() }
 
         repository = SessionRepository(this)
-
-        var target = SecurePrefs.getTargetSessions(this).coerceAtLeast(1)
-        binding.tvTargetValue.text = target.toString()
-
-        binding.btnDecreaseTarget.setOnClickListener {
-            if (target > 1) {
-                target -= 1
-                binding.tvTargetValue.text = target.toString()
-                SecurePrefs.setTargetSessions(this, target)
-            }
-        }
-        binding.btnIncreaseTarget.setOnClickListener {
-            target += 1
-            binding.tvTargetValue.text = target.toString()
-            SecurePrefs.setTargetSessions(this, target)
-        }
 
         binding.switchAppLock.isChecked = SecurePrefs.isLockEnabled(this)
         binding.switchAppLock.setOnCheckedChangeListener { _, isChecked ->
@@ -64,27 +49,6 @@ class SettingsActivity : AppCompatActivity() {
                 false
             ).show()
         }
-
-        binding.btnStartNewPlan.setOnClickListener { confirmStartNewPlan() }
-    }
-
-    private fun confirmStartNewPlan() {
-        AlertDialog.Builder(this)
-            .setTitle(R.string.confirm_new_plan_title)
-            .setMessage(R.string.confirm_new_plan_message)
-            .setPositiveButton(R.string.start) { _, _ -> startNewPlan() }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
-    }
-
-    private fun startNewPlan() {
-        lifecycleScope.launch {
-            val allSessions = repository.getAll()
-            allSessions.forEach { ReminderScheduler.cancel(this@SettingsActivity, it.id) }
-            repository.deleteAll()
-            SecurePrefs.clearTargetSessions(this@SettingsActivity)
-            finish()
-        }
     }
 
     private fun updateMorningTimeText(hour: Int, minute: Int) {
@@ -97,8 +61,17 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun rescheduleAllUpcoming() {
         lifecycleScope.launch {
-            val upcoming = repository.getFutureScheduled()
-            upcoming.forEach { ReminderScheduler.schedule(this@SettingsActivity, it) }
+            val upcoming = repository.getAllFutureScheduledWithCategory()
+            upcoming.forEach { item ->
+                val session = Session(
+                    id = item.id,
+                    dateTimeMillis = item.dateTimeMillis,
+                    status = item.status,
+                    createdAtMillis = item.createdAtMillis,
+                    categoryId = item.categoryId
+                )
+                ReminderScheduler.schedule(this@SettingsActivity, session, item.categoryName)
+            }
         }
     }
 }

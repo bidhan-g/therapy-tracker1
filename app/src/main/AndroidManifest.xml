@@ -23,6 +23,10 @@
         </activity>
 
         <activity
+            android:name=".ui.CategoryListActivity"
+            android:exported="false" />
+
+        <activity
             android:name=".ui.MainActivity"
             android:exported="false" />
 

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/category_name_label"
+        android:textColor="#666666"
+        android:textSize="13sp" />
+
+    <EditText
+        android:id="@+id/etCategoryName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="textCapWords"
+        android:hint="@string/category_name_hint"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:id="@+id/tvCategoryNameError"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/category_name_error"
+        android:textColor="@color/status_missed"
+        android:textSize="12sp"
+        android:visibility="gone"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/category_target_label"
+        android:textColor="#666666"
+        android:textSize="13sp"
+        android:layout_marginTop="16dp" />
+
+    <EditText
+        android:id="@+id/etCategoryTarget"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:hint="@string/category_target_hint"
+        android:layout_marginTop="4dp" />
+
+</LinearLayout>

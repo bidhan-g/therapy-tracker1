@@ -15,7 +15,7 @@ object ReminderScheduler {
     private fun morningWorkName(sessionId: Long) = "reminder_morning_$sessionId"
     private fun hourWorkName(sessionId: Long) = "reminder_hour_$sessionId"
 
-    fun schedule(context: Context, session: Session) {
+    fun schedule(context: Context, session: Session, categoryName: String = "Appointment") {
         cancel(context, session.id)
 
         val morningHour = SecurePrefs.getMorningHour(context)
@@ -43,8 +43,9 @@ object ReminderScheduler {
                 .setInputData(
                     workDataOf(
                         ReminderWorker.KEY_SESSION_ID to session.id,
-                        ReminderWorker.KEY_TITLE to "Therapy session today",
-                        ReminderWorker.KEY_MESSAGE to "You have a therapy session scheduled today."
+                        ReminderWorker.KEY_CATEGORY_ID to session.categoryId,
+                        ReminderWorker.KEY_TITLE to "$categoryName appointment today",
+                        ReminderWorker.KEY_MESSAGE to "You have a $categoryName appointment scheduled today."
                     )
                 )
                 .build()
@@ -58,8 +59,9 @@ object ReminderScheduler {
                 .setInputData(
                     workDataOf(
                         ReminderWorker.KEY_SESSION_ID to session.id,
-                        ReminderWorker.KEY_TITLE to "Therapy session in 1 hour",
-                        ReminderWorker.KEY_MESSAGE to "Your therapy session starts in about an hour."
+                        ReminderWorker.KEY_CATEGORY_ID to session.categoryId,
+                        ReminderWorker.KEY_TITLE to "$categoryName appointment in 1 hour",
+                        ReminderWorker.KEY_MESSAGE to "Your $categoryName appointment starts in about an hour."
                     )
                 )
                 .build()

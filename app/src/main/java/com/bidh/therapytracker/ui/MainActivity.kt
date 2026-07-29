@@ -8,14 +8,20 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
+import android.view.WindowManager
+import android.widget.EditText
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bidh.therapytracker.R
-import com.bidh.therapytracker.data.SecurePrefs
+import com.bidh.therapytracker.data.Category
+import com.bidh.therapytracker.data.CategoryRepository
 import com.bidh.therapytracker.data.Session
 import com.bidh.therapytracker.data.SessionRepository
 import com.bidh.therapytracker.data.SessionStatus
@@ -29,18 +35,30 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var repository: SessionRepository
+    private lateinit var categoryRepository: CategoryRepository
     private lateinit var adapter: SessionAdapter
-    private var targetSetupDialog: AlertDialog? = null
+    private var categoryId: Long = -1
+    private var currentCategory: Category? = null
+    private var lastCompletedCount = 0
 
     private enum class DialogMode { SCHEDULE, LOG_PAST, EDIT }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        window.setFlags(WindowManager.LayoutParams.FLAG_SECURE, WindowManager.LayoutParams.FLAG_SECURE)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
+        binding.toolbar.setNavigationOnClickListener { finish() }
+
+        categoryId = intent.getLongExtra(EXTRA_CATEGORY_ID, -1)
+        if (categoryId <= 0) {
+            finish()
+            return
+        }
 
         repository = SessionRepository(this)
+        categoryRepository = CategoryRepository(this)
         adapter = SessionAdapter(
             onEdit = { showSessionDialog(DialogMode.EDIT, it) },
             onDelete = { confirmDelete(it) },
@@ -54,75 +72,117 @@ class MainActivity : AppCompatActivity() {
         binding.btnScheduleAppointment.setOnClickListener { showSessionDialog(DialogMode.SCHEDULE, null) }
         binding.btnLogPastSession.setOnClickListener { showSessionDialog(DialogMode.LOG_PAST, null) }
 
+        loadCategory()
         observeData()
         requestNotificationPermissionIfNeeded()
     }
 
-    override fun onResume() {
-        super.onResume()
-        if (!SecurePrefs.isTargetSet(this) && targetSetupDialog?.isShowing != true) {
-            showTargetSetupDialog()
+    private fun loadCategory() {
+        lifecycleScope.launch {
+            currentCategory = categoryRepository.getById(categoryId)
+            binding.toolbar.title = currentCategory?.name ?: getString(R.string.app_name)
+            refreshProgressDisplay()
         }
     }
 
-    private fun showTargetSetupDialog() {
-        val view = layoutInflater.inflate(R.layout.dialog_set_target, null)
-        val etTarget = view.findViewById<android.widget.EditText>(R.id.etTargetInput)
-        val tvError = view.findViewById<android.widget.TextView>(R.id.tvTargetError)
-
-        val dialog = AlertDialog.Builder(this)
-            .setView(view)
-            .setCancelable(false)
-            .setPositiveButton(R.string.get_started, null)
-            .create()
-
-        dialog.setOnShowListener {
-            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val value = etTarget.text.toString().trim().toIntOrNull()
-                if (value == null || value <= 0) {
-                    tvError.visibility = View.VISIBLE
-                } else {
-                    SecurePrefs.setTargetSessions(this, value)
-                    binding.tvProgressCount.text = "0 / $value"
-                    dialog.dismiss()
-                }
-            }
-        }
-
-        targetSetupDialog = dialog
-        dialog.show()
-    }
-
-    override fun onCreateOptionsMenu(menu: android.view.Menu): Boolean {
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_main, menu)
         return true
     }
 
-    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
-        return if (item.itemId == R.id.action_settings) {
-            startActivity(Intent(this, SettingsActivity::class.java))
-            true
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_settings -> {
+                startActivity(Intent(this, SettingsActivity::class.java))
+                true
+            }
+            R.id.action_edit_category -> {
+                showEditCategoryDialog()
+                true
+            }
+            R.id.action_delete_category -> {
+                confirmDeleteCategory()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun showEditCategoryDialog() {
+        val category = currentCategory ?: return
+        val view = layoutInflater.inflate(R.layout.dialog_add_category, null)
+        val etName = view.findViewById<EditText>(R.id.etCategoryName)
+        val tvNameError = view.findViewById<TextView>(R.id.tvCategoryNameError)
+        val etTarget = view.findViewById<EditText>(R.id.etCategoryTarget)
+        etName.setText(category.name)
+        category.targetCount?.let { etTarget.setText(it.toString()) }
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.edit_category)
+            .setView(view)
+            .setPositiveButton(R.string.save, null)
+            .setNegativeButton(R.string.cancel, null)
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val name = etName.text.toString().trim()
+                if (name.isEmpty()) {
+                    tvNameError.visibility = View.VISIBLE
+                    return@setOnClickListener
+                }
+                val targetText = etTarget.text.toString().trim()
+                val target = if (targetText.isEmpty()) null else targetText.toIntOrNull()?.takeIf { it > 0 }
+                lifecycleScope.launch {
+                    val updated = category.copy(name = name, targetCount = target)
+                    categoryRepository.update(updated)
+                    currentCategory = updated
+                    binding.toolbar.title = updated.name
+                    refreshProgressDisplay()
+                    dialog.dismiss()
+                }
+            }
+        }
+        dialog.show()
+    }
+
+    private fun confirmDeleteCategory() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.confirm_delete_category_title)
+            .setMessage(R.string.confirm_delete_category_message)
+            .setPositiveButton(R.string.delete) { _, _ -> deleteCategory() }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun deleteCategory() {
+        val category = currentCategory ?: return
+        lifecycleScope.launch {
+            val sessions = repository.getAllForCategory(categoryId)
+            sessions.forEach { ReminderScheduler.cancel(this@MainActivity, it.id) }
+            repository.deleteAllForCategory(categoryId)
+            categoryRepository.delete(category)
+            finish()
+        }
+    }
+
+    private fun refreshProgressDisplay() {
+        val target = currentCategory?.targetCount
+        binding.tvProgressCount.text = if (target != null && target > 0) "$lastCompletedCount / $target" else "$lastCompletedCount"
+        binding.progressBar.progress = if (target != null && target > 0) {
+            ((lastCompletedCount.toFloat() / target) * 100).toInt().coerceIn(0, 100)
         } else {
-            super.onOptionsItemSelected(item)
+            0
         }
     }
 
     private fun observeData() {
-        val target = SecurePrefs.getTargetSessions(this)
-        binding.tvProgressCount.text = if (target > 0) "0 / $target" else "0"
-
-        repository.observeCompletedCount().observe(this) { count ->
-            val currentTarget = SecurePrefs.getTargetSessions(this)
-            binding.tvProgressCount.text = if (currentTarget > 0) "$count / $currentTarget" else "$count"
-            val pct = if (currentTarget > 0) {
-                ((count.toFloat() / currentTarget) * 100).toInt().coerceIn(0, 100)
-            } else {
-                0
-            }
-            binding.progressBar.progress = pct
+        repository.observeCompletedCountForCategory(categoryId).observe(this) { count ->
+            lastCompletedCount = count
+            refreshProgressDisplay()
         }
 
-        repository.observeNextUpcoming().observe(this) { session ->
+        repository.observeNextUpcomingForCategory(categoryId).observe(this) { session ->
             if (session == null) {
                 binding.tvNextAppointment.text = getString(R.string.no_upcoming_appointment)
                 binding.layoutNextAppointmentActions.visibility = View.GONE
@@ -134,7 +194,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        repository.observeAll().observe(this) { sessions ->
+        repository.observeAllForCategory(categoryId).observe(this) { sessions ->
             adapter.submitList(sessions)
             binding.tvEmptyHistory.visibility = if (sessions.isEmpty()) View.VISIBLE else View.GONE
         }
@@ -201,15 +261,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun saveSession(mode: DialogMode, existing: Session?, dateTimeMillis: Long) {
+        val categoryName = currentCategory?.name ?: getString(R.string.app_name)
         lifecycleScope.launch {
             when (mode) {
                 DialogMode.SCHEDULE -> {
-                    val session = Session(dateTimeMillis = dateTimeMillis, status = SessionStatus.SCHEDULED)
+                    val session = Session(dateTimeMillis = dateTimeMillis, status = SessionStatus.SCHEDULED, categoryId = categoryId)
                     val id = repository.insert(session)
-                    ReminderScheduler.schedule(this@MainActivity, session.copy(id = id))
+                    ReminderScheduler.schedule(this@MainActivity, session.copy(id = id), categoryName)
                 }
                 DialogMode.LOG_PAST -> {
-                    val session = Session(dateTimeMillis = dateTimeMillis, status = SessionStatus.COMPLETED)
+                    val session = Session(dateTimeMillis = dateTimeMillis, status = SessionStatus.COMPLETED, categoryId = categoryId)
                     repository.insert(session)
                 }
                 DialogMode.EDIT -> {
@@ -217,7 +278,7 @@ class MainActivity : AppCompatActivity() {
                         val updated = it.copy(dateTimeMillis = dateTimeMillis)
                         repository.update(updated)
                         if (updated.status == SessionStatus.SCHEDULED) {
-                            ReminderScheduler.schedule(this@MainActivity, updated)
+                            ReminderScheduler.schedule(this@MainActivity, updated, categoryName)
                         } else {
                             ReminderScheduler.cancel(this@MainActivity, updated.id)
                         }
@@ -228,11 +289,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateStatus(session: Session, status: SessionStatus) {
+        val categoryName = currentCategory?.name ?: getString(R.string.app_name)
         lifecycleScope.launch {
             val updated = session.copy(status = status)
             repository.update(updated)
             if (status == SessionStatus.SCHEDULED) {
-                ReminderScheduler.schedule(this@MainActivity, updated)
+                ReminderScheduler.schedule(this@MainActivity, updated, categoryName)
             } else {
                 ReminderScheduler.cancel(this@MainActivity, updated.id)
             }
@@ -261,5 +323,9 @@ class MainActivity : AppCompatActivity() {
                 ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 100)
             }
         }
+    }
+
+    companion object {
+        const val EXTRA_CATEGORY_ID = "extra_category_id"
     }
 }

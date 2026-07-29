@@ -9,7 +9,8 @@ import java.security.SecureRandom
 object SecurePrefs {
 
     private const val PREFS_NAME = "therapy_tracker_secure_prefs"
-    private const val KEY_TARGET_SESSIONS = "target_sessions"
+    private const val KEY_TARGET_SESSIONS = "target_sessions" // legacy, pre-categories
+    private const val KEY_LEGACY_MIGRATED = "legacy_target_migrated"
     private const val KEY_LOCK_ENABLED = "lock_enabled"
     private const val KEY_MORNING_HOUR = "morning_hour"
     private const val KEY_MORNING_MINUTE = "morning_minute"
@@ -28,19 +29,15 @@ object SecurePrefs {
         )
     }
 
-    // -1 means the user hasn't chosen a total yet.
-    fun getTargetSessions(context: Context): Int =
+    // -1 means there was no legacy single-plan target (pre-categories version of the app).
+    fun getLegacyTargetSessions(context: Context): Int =
         prefs(context).getInt(KEY_TARGET_SESSIONS, -1)
 
-    fun isTargetSet(context: Context): Boolean =
-        getTargetSessions(context) > 0
+    fun isLegacyTargetMigrated(context: Context): Boolean =
+        prefs(context).getBoolean(KEY_LEGACY_MIGRATED, false)
 
-    fun setTargetSessions(context: Context, value: Int) {
-        prefs(context).edit().putInt(KEY_TARGET_SESSIONS, value).apply()
-    }
-
-    fun clearTargetSessions(context: Context) {
-        prefs(context).edit().remove(KEY_TARGET_SESSIONS).apply()
+    fun setLegacyTargetMigrated(context: Context) {
+        prefs(context).edit().putBoolean(KEY_LEGACY_MIGRATED, true).apply()
     }
 
     fun isLockEnabled(context: Context): Boolean =
