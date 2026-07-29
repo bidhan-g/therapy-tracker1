@@ -22,6 +22,9 @@ interface SessionDao {
     @Query("SELECT * FROM sessions WHERE status = 'SCHEDULED' AND dateTimeMillis >= :nowMillis")
     suspend fun getFutureScheduled(nowMillis: Long): List<Session>
 
+    @Query("SELECT * FROM sessions")
+    suspend fun getAll(): List<Session>
+
     @Insert
     suspend fun insert(session: Session): Long
 
@@ -30,4 +33,7 @@ interface SessionDao {
 
     @Delete
     suspend fun delete(session: Session)
+
+    @Query("DELETE FROM sessions")
+    suspend fun deleteAll()
 }
