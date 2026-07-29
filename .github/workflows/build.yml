@@ -27,24 +27,19 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.7
-          cache-disabled: true
+
       - name: Show resolved dependencies (diagnostic)
         run: gradle :app:dependencies --configuration releaseRuntimeClasspath --no-daemon
-      - name: Generate release keystore (self-signed, CI-local only)
-        run: |
-          keytool -genkeypair -v \
-            -keystore app/release.keystore \
-            -alias therapytracker \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass therapytracker -keypass therapytracker \
-            -dname "CN=TherapyTracker, OU=Personal, O=Personal, L=Local, S=Local, C=US"
+
+      - name: Restore permanent release keystore
+        run: echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
 
       - name: Build release APK
         env:
           RELEASE_KEYSTORE: release.keystore
-          RELEASE_KEYSTORE_PASSWORD: therapytracker
-          RELEASE_KEY_ALIAS: therapytracker
-          RELEASE_KEY_PASSWORD: therapytracker
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: gradle :app:assembleRelease --no-daemon --stacktrace
 
       - name: Upload APK artifact
@@ -52,13 +47,3 @@ jobs:
         with:
           name: TherapyTracker-app
           path: app/build/outputs/apk/release/*.apk
-
-      - name: Create GitHub Release with APK
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: build-${{ github.run_number }}
-          name: "TherapyTracker build ${{ github.run_number }}"
-          files: app/build/outputs/apk/release/*.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
