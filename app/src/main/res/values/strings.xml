@@ -1,0 +1,36 @@
+<resources>
+    <string name="app_name">Therapy Tracker</string>
+    <string name="progress_label">Sessions completed</string>
+    <string name="next_appointment_label">Next appointment</string>
+    <string name="no_upcoming_appointment">No upcoming appointment scheduled</string>
+    <string name="edit">Edit</string>
+    <string name="cancel">Cancel</string>
+    <string name="schedule_appointment">Schedule Appointment</string>
+    <string name="log_past_session">Log Past Session</string>
+    <string name="history_label">History</string>
+    <string name="no_sessions_yet">No sessions logged yet. Schedule an appointment or log a past session to get started.</string>
+    <string name="more_options">More options</string>
+    <string name="settings_title">Settings</string>
+    <string name="date_label">Date</string>
+    <string name="select_date">Select date</string>
+    <string name="time_label">Time</string>
+    <string name="select_time">Select time</string>
+    <string name="target_sessions_label">Total sessions in your treatment plan</string>
+    <string name="app_lock_label">Lock app</string>
+    <string name="app_lock_description">Require your fingerprint, face, or device PIN to open the app.</string>
+    <string name="morning_reminder_label">Morning reminder time</string>
+    <string name="security_info_title">Your data</string>
+    <string name="security_info_body">All session data stays on this device only. This app has no internet access and cannot send your data anywhere. Backups of this app\'s data are disabled.</string>
+    <string name="locked_message">Verify it\'s you to view your therapy sessions.</string>
+    <string name="unlock">Unlock</string>
+    <string name="delete">Delete</string>
+    <string name="mark_completed">Mark completed</string>
+    <string name="mark_missed">Mark missed</string>
+    <string name="mark_scheduled">Mark scheduled</string>
+    <string name="status_completed">Completed</string>
+    <string name="status_scheduled">Scheduled</string>
+    <string name="status_missed">Missed</string>
+    <string name="confirm_delete_title">Delete session?</string>
+    <string name="confirm_delete_message">This will permanently remove this session from your history.</string>
+    <string name="save">Save</string>
+</resources>
