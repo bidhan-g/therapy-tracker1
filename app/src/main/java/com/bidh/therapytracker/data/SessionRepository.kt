@@ -15,9 +15,13 @@ class SessionRepository(context: Context) {
 
     suspend fun getFutureScheduled(): List<Session> = dao.getFutureScheduled(System.currentTimeMillis())
 
+    suspend fun getAll(): List<Session> = dao.getAll()
+
     suspend fun insert(session: Session): Long = dao.insert(session)
 
     suspend fun update(session: Session) = dao.update(session)
 
     suspend fun delete(session: Session) = dao.delete(session)
+
+    suspend fun deleteAll() = dao.deleteAll()
 }
