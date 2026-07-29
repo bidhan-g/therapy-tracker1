@@ -53,17 +53,22 @@ class MainActivity : AppCompatActivity() {
         binding.btnScheduleAppointment.setOnClickListener { showSessionDialog(DialogMode.SCHEDULE, null) }
         binding.btnLogPastSession.setOnClickListener { showSessionDialog(DialogMode.LOG_PAST, null) }
 
-        binding.toolbar.setOnMenuItemClickListener { item ->
-            if (item.itemId == R.id.action_settings) {
-                startActivity(Intent(this, SettingsActivity::class.java))
-                true
-            } else {
-                false
-            }
-        }
-
-        observeData()
+       observeData()
         requestNotificationPermissionIfNeeded()
+    }
+
+    override fun onCreateOptionsMenu(menu: android.view.Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
+        return if (item.itemId == R.id.action_settings) {
+            startActivity(Intent(this, SettingsActivity::class.java))
+            true
+        } else {
+            super.onOptionsItemSelected(item)
+        }
     }
 
     private fun observeData() {
