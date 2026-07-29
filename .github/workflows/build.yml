@@ -27,7 +27,8 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.7
-
+      - name: Show resolved dependencies (diagnostic)
+        run: gradle :app:dependencies --configuration releaseRuntimeClasspath --no-daemon
       - name: Generate release keystore (self-signed, CI-local only)
         run: |
           keytool -genkeypair -v \
